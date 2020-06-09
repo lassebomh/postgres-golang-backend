@@ -39,22 +39,23 @@ func main() {
 			if dir("1") {
 				if dir("1") {
 					if dir("GET") {
-						fmt.Println(r)
-						io.WriteString(res, "get!!!")
+						io.WriteString(res, "1 1 get")
 
 					} else if dir("HEAD") {
-						io.WriteString(res, "head!!!")
-
+						io.WriteString(res, "1 1 head")
 					}
-
 				} else if dir("2") {
-					io.WriteString(res, "this is number huan two!!")
-
+					if dir("GET") {
+						io.WriteString(res, "1 2 get")
+					}
+				} else if dir("GET") {
+					io.WriteString(res, "1 get")
 				}
 
 			} else if dir("2") {
-				io.WriteString(res, "this is number two!!")
-
+				if dir("GET") {
+					io.WriteString(res, "2 get")
+				}
 			}
 		}
 
