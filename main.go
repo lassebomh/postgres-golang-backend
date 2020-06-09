@@ -27,35 +27,27 @@ func main() {
 			}
 		}()
 
-		r := strings.SplitN(strings.Trim(req.URL.Path, "/"), "/", -1)
+		r := strings.SplitN(strings.Trim(req.URL.Path, "/")+"/"+req.Method, "/", -1)
 
-		r = append(r, req.Method)
+		if r[0] == "" {
+			r = append(r[:0], r[1:]...)
+		}
 
 		dir := func(s string) bool { return popAndCheck(&r, s) }
 
 		{
-			res.Header().Add("Content-Type", "text/html")
-
-			if dir("1") {
-				if dir("1") {
-					if dir("GET") {
-						io.WriteString(res, "1 1 get")
-
-					} else if dir("HEAD") {
-						io.WriteString(res, "1 1 head")
-					}
-				} else if dir("2") {
-					if dir("GET") {
+			switch {
+			case dir("1"):
+				fmt.Println(r)
+				switch {
+				case dir("2"):
+					switch {
+					case dir("GET"):
 						io.WriteString(res, "1 2 get")
 					}
-				} else if dir("GET") {
-					io.WriteString(res, "1 get")
 				}
-
-			} else if dir("2") {
-				if dir("GET") {
-					io.WriteString(res, "2 get")
-				}
+			case dir("GET"):
+				io.WriteString(res, "index")
 			}
 		}
 
