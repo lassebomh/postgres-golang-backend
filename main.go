@@ -33,21 +33,29 @@ func main() {
 			r = append(r[:0], r[1:]...)
 		}
 
-		dir := func(s string) bool { return popAndCheck(&r, s) }
+		dir := func(s string) bool {
+			return popAndCheck(&r, s)
+		}
+
+		send := func(statusCode int, body string) {
+			res.WriteHeader(statusCode)
+			io.WriteString(res, body)
+		}
 
 		{
+			res.WriteHeader(404)
+
 			switch {
 			case dir("1"):
-				fmt.Println(r)
 				switch {
 				case dir("2"):
 					switch {
 					case dir("GET"):
-						io.WriteString(res, "1 2 get")
+						send(200, "1 2 GET")
 					}
 				}
 			case dir("GET"):
-				io.WriteString(res, "index")
+				send(200, "index")
 			}
 		}
 
