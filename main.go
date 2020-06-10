@@ -1,10 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
+
+	"github.com/jackc/pgx/v4"
 )
 
 func popAndCheck(xs *[]string, path string) bool {
@@ -15,6 +19,25 @@ func popAndCheck(xs *[]string, path string) bool {
 	} else {
 		return false
 	}
+}
+
+func init() {
+	conn, err := pgx.Connect(context.Background(), os.Getenv("localhost:5432/power"))
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
+	}
+	defer conn.Close(context.Background())
+
+	var name string
+	var weight int64
+	err = conn.QueryRow(context.Background(), "select email, password from users").Scan(&name, &weight)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println(name, weight)
 }
 
 func main() {
@@ -43,8 +66,6 @@ func main() {
 		}
 
 		{
-			res.WriteHeader(404)
-
 			switch {
 			case dir("1"):
 				switch {
