@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strings"
 
 	_ "github.com/lib/pq"
@@ -28,6 +29,8 @@ const (
 	dbname   = "power"
 )
 
+var db *sql.DB
+
 func init() {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
@@ -45,6 +48,14 @@ func init() {
 }
 
 func main() {
+	sqlStatement := `INSERT INTO users (email, password) VALUES ($1, $2)`
+	_, err := db.Exec(sqlStatement, 30, "test@example.com", "Goes_To_Eleven11")
+	if err != nil {
+		panic(err)
+	}
+
+	os.Exit(69)
+
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
