@@ -1,17 +1,16 @@
 package main
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 
-	"github.com/jackc/pgx/v4"
+	_ "github.com/lib/pq"
 )
 
-func popAndCheck(xs *[]string, path string) bool {
+func checkAndPop(xs *[]string, path string) bool {
 
 	if (*xs)[0] == path {
 		*xs = append((*xs)[1:])
@@ -21,23 +20,28 @@ func popAndCheck(xs *[]string, path string) bool {
 	}
 }
 
+const (
+	host     = "localhost"
+	port     = 5432
+	user     = "postgres"
+	password = "qp48shrushY!"
+	dbname   = "power"
+)
+
 func init() {
-	conn, err := pgx.Connect(context.Background(), os.Getenv("localhost:5432/power"))
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
-		os.Exit(1)
-	}
-	defer conn.Close(context.Background())
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 
-	var name string
-	var weight int64
-	err = conn.QueryRow(context.Background(), "select email, password from users").Scan(&name, &weight)
+	db, err := sql.Open("postgres", psqlInfo)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "QueryRow failed: %v\n", err)
-		os.Exit(1)
+		panic(err)
+	}
+	defer db.Close()
+
+	err = db.Ping()
+	if err != nil {
+		panic(err)
 	}
 
-	fmt.Println(name, weight)
 }
 
 func main() {
@@ -57,7 +61,7 @@ func main() {
 		}
 
 		dir := func(s string) bool {
-			return popAndCheck(&r, s)
+			return checkAndPop(&r, s)
 		}
 
 		send := func(statusCode int, body string) {
@@ -79,7 +83,6 @@ func main() {
 				send(200, "index")
 			}
 		}
-
 	})
 
 	http.ListenAndServe(":5000", nil)
