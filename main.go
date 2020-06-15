@@ -1,4 +1,4 @@
-package main
+package maina
 
 import (
 	"database/sql"
@@ -12,7 +12,6 @@ import (
 )
 
 func checkAndPop(xs *[]string, path string) bool {
-
 	if (*xs)[0] == path {
 		*xs = append((*xs)[1:])
 		return true
@@ -28,6 +27,11 @@ const (
 	password = "qp48shrushY!"
 	dbname   = "power"
 )
+
+type User struct {
+	Password string
+	Email    string
+}
 
 var db *sql.DB
 
@@ -48,9 +52,17 @@ func init() {
 }
 
 func main() {
-	sqlStatement := `INSERT INTO users (email, password) VALUES ($1, $2)`
-	_, err := db.Exec(sqlStatement, 30, "test@example.com", "Goes_To_Eleven11")
-	if err != nil {
+	sqlStatement := `SELECT * FROM users;`
+	var user User
+	row := db.QueryRow(sqlStatement, 3)
+	err := row.Scan(&user.Password, &user.Email)
+	switch err {
+	case sql.ErrNoRows:
+		fmt.Println("No rows were returned!")
+		return
+	case nil:
+		fmt.Println(user)
+	default:
 		panic(err)
 	}
 
