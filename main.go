@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -92,7 +93,7 @@ func main() {
 			io.WriteString(res, body)
 		}
 
-		// The route
+		// The Route
 		{
 			switch dir() {
 			case "GET":
@@ -100,7 +101,19 @@ func main() {
 			case "user":
 				switch dir() {
 				case "POST":
-					fmt.Println()
+					b, _ := ioutil.ReadAll(req.Body)
+
+					var credentialsInput struct {
+						Email    string `json:"email"`
+						Password string `json:"password"`
+					}
+
+					err = json.Unmarshal([]byte(b), &credentialsInput)
+					if err != nil {
+						log.Panicf("Failed to unmarshal input: %v", err)
+					}
+
+					fmt.Println(credentialsInput.Email, credentialsInput.Password)
 				}
 			}
 		}
