@@ -30,6 +30,14 @@ var config struct {
 	} `yaml:"HTTP"`
 }
 
+// todo: exit with status code
+
+// todo: exit with status code and message
+
+// todo: exit with message only (status code 500)
+
+// todo: proper send that returns
+
 func main() {
 
 	secretFile, err := ioutil.ReadFile("secret.yaml")
@@ -68,9 +76,15 @@ func main() {
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-				statusCode := err.(int)
-				fmt.Printf("%T %v", err, err)
-				res.WriteHeader(statusCode)
+
+				statusCode, convErr := err.(int)
+				if convErr {
+					fmt.Printf("Exited with status code: %v", err)
+					res.WriteHeader(statusCode)
+				} else {
+					fmt.Printf("%T %v", err, err)
+					res.WriteHeader(500)
+				}
 			}
 		}()
 
