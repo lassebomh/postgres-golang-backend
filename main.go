@@ -1,15 +1,33 @@
-package maina
+package main
 
 import (
 	"database/sql"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"log"
 	"net/http"
-	"os"
+	"strconv"
 	"strings"
 
 	_ "github.com/lib/pq"
+	"gopkg.in/yaml.v2"
 )
+
+var db *sql.DB
+
+var config struct {
+	PostgresDB struct {
+		Host     string `yaml:"Host"`
+		Port     int    `yaml:"Port"`
+		User     string `yaml:"User"`
+		Password string `yaml:"Password"`
+		Dbname   string `yaml:"DBname"`
+	} `yaml:"PostgresDB"`
+	HTTP struct {
+		Port int `yaml:"Port"`
+	} `yaml:"HTTP"`
+}
 
 func checkAndPop(xs *[]string, path string) bool {
 	if (*xs)[0] == path {
@@ -20,53 +38,38 @@ func checkAndPop(xs *[]string, path string) bool {
 	}
 }
 
-const (
-	host     = "localhost"
-	port     = 5432
-	user     = "postgres"
-	password = "qp48shrushY!"
-	dbname   = "power"
-)
+func main() {
 
-type User struct {
-	Password string
-	Email    string
-}
-
-var db *sql.DB
-
-func init() {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
-
-	db, err := sql.Open("postgres", psqlInfo)
+	secret, err := ioutil.ReadFile("secret.yaml")
 	if err != nil {
-		panic(err)
+		log.Fatalln("Failed to load secret.yaml")
 	}
+
+	err = yaml.Unmarshal([]byte(secret), &config)
+	if err != nil {
+		log.Fatalf("cannot unmarshal secret.yaml: %v", err)
+	}
+
+	dbconf := config.PostgresDB
+
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", dbconf.Host, dbconf.Port, dbconf.User, dbconf.Password, dbconf.Dbname)
+	db, err = sql.Open("postgres", psqlInfo)
+	if err != nil {
+		log.Fatal("Could not connect to database")
+	}
+
 	defer db.Close()
 
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
-
-}
-
-func main() {
-	sqlStatement := `SELECT * FROM users;`
-	var user User
-	row := db.QueryRow(sqlStatement, 3)
-	err := row.Scan(&user.Password, &user.Email)
-	switch err {
-	case sql.ErrNoRows:
-		fmt.Println("No rows were returned!")
-		return
-	case nil:
-		fmt.Println(user)
-	default:
-		panic(err)
-	}
-
-	os.Exit(69)
+	// rows, err := db.Query("SELECT email, password FROM users")
+	// for rows.Next() {
+	// 	var email string
+	// 	var password string
+	// 	err = rows.Scan(&email, &password)
+	// 	if err != nil {
+	// 		panic(err)
+	// 	}
+	// 	fmt.Printf("%v %v\n", email, password)
+	// }
 
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		defer func() {
@@ -108,5 +111,7 @@ func main() {
 		}
 	})
 
-	http.ListenAndServe(":5000", nil)
+	port := strconv.Itoa(config.HTTP.Port)
+
+	http.ListenAndServe(":"+port, nil)
 }
