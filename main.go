@@ -113,7 +113,21 @@ func main() {
 						log.Panicf("Failed to unmarshal input: %v", err)
 					}
 
-					fmt.Println(credentialsInput.Email, credentialsInput.Password)
+					var countMatches int
+
+					err := db.QueryRow(`select count(email) from users where (email=$1)`,
+						credentialsInput.Email).Scan(&countMatches)
+					if err != nil {
+						log.Panic("Failed to check wether email is taken")
+					}
+
+					// todo: assert valid email format
+
+					if countMatches == 0 {
+						send(200, "")
+					} else {
+						send(403, "")
+					}
 				}
 			}
 		}
