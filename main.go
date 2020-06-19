@@ -23,11 +23,20 @@ var config struct {
 		Port     int    `yaml:"Port"`
 		User     string `yaml:"User"`
 		Password string `yaml:"Password"`
-		Dbname   string `yaml:"DBname"`
+		DBname   string `yaml:"DBname"`
 	} `yaml:"PostgresDB"`
 	HTTP struct {
 		Port int `yaml:"Port"`
 	} `yaml:"HTTP"`
+}
+
+type exitErr struct {
+	statusCode    int
+	statusMessage string
+}
+
+func exitError(statusCode int, statusMessage string) {
+	panic(exitErr{statusCode, statusMessage})
 }
 
 // todo: exit with status code
@@ -42,7 +51,7 @@ func main() {
 
 	secretFile, err := ioutil.ReadFile("secret.yaml")
 	if err != nil {
-		log.Fatalln("Failed to load secret.yaml")
+		log.Fatalln("Failed to load secret.yaml. Maybe it doesn't exist?")
 	}
 
 	err = yaml.Unmarshal([]byte(secretFile), &config)
@@ -53,7 +62,7 @@ func main() {
 	dbconf := config.PostgresDB
 
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		dbconf.Host, dbconf.Port, dbconf.User, dbconf.Password, dbconf.Dbname)
+		dbconf.Host, dbconf.Port, dbconf.User, dbconf.Password, dbconf.DBname)
 
 	db, err = sql.Open("postgres", psqlInfo)
 	if err != nil {
@@ -76,15 +85,8 @@ func main() {
 	http.HandleFunc("/", func(res http.ResponseWriter, req *http.Request) {
 		defer func() {
 			if err := recover(); err != nil {
-
-				statusCode, convErr := err.(int)
-				if convErr {
-					fmt.Printf("Exited with status code: %v", err)
-					res.WriteHeader(statusCode)
-				} else {
-					fmt.Printf("%T %v", err, err)
-					res.WriteHeader(500)
-				}
+				log.Println(err)
+				http.Error(res, "An unexpected error has occured on the server", 500)
 			}
 		}()
 
@@ -124,7 +126,8 @@ func main() {
 
 					err = json.Unmarshal([]byte(b), &credentialsInput)
 					if err != nil {
-						log.Panicf("Failed to unmarshal input: %v", err)
+						http.Error(res, "Body is not valid JSON", 403)
+						return
 					}
 
 					var countMatches int
@@ -132,20 +135,21 @@ func main() {
 					err := db.QueryRow(`select count(email) from users where (email=$1)`,
 						credentialsInput.Email).Scan(&countMatches)
 					if err != nil {
-						log.Panic("Failed to check wether email is taken")
+						panic("Failed to check wether email is taken")
 					}
 
 					// todo: assert valid email format
 
-					if countMatches == 0 {
-						send(200, "")
-					} else {
-						send(403, "")
+					if countMatches != 0 {
+						http.Error(res, "Email is taken", 403)
+						return
 					}
+
+					http.Error(res, "", 200)
 				}
 			}
 		}
 	})
 
-	http.ListenAndServe(":"+strconv.Itoa(config.HTTP.Port), nil)
+	log.Fatal(http.ListenAndServe(":"+strconv.Itoa(config.HTTP.Port), nil))
 }
