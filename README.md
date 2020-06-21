@@ -18,5 +18,5 @@ The route has the following structure:
 ```
 The purpose of this format is to create an easy and extensible way of making REST APIs in Go.
 ## How to use
-1. Rename the `secret.yaml --example` to `secret.yaml`. **This contains confedential information such as the postgres user password** and other miscellaneous settings. **It is vital that this file is in your `.gitingore`** for obvious reasons.
-2. Locate *the route* inside `main.go`. This is where the you write the API.
+1. Rename the `secret.yaml --example` file to `secret.yaml`. **This file contains confedential information such as the postgres user password** and other miscellaneous settings. **It is vital that this file is in your `.gitingore`!**
+2. Locate *the route* inside `main.go`. This is where you write your API.
