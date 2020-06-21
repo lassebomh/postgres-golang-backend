@@ -16,4 +16,4 @@ The route has the following structure:
     }
 }
 ```
-The purpose of this format is an attempt to create an easy and extensible REST api.
+The purpose of this format is to create an easy and extensible way of making REST APIs in Go.
