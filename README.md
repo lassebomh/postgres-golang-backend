@@ -16,3 +16,4 @@ The route has the following structure:
     }
 }
 ```
+The purpose of this format is an attempt to create an easy and extensible REST api.
